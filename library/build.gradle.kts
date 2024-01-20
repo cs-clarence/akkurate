@@ -1,12 +1,16 @@
 plugins {
     id("akkurate.kmp-library-conventions")
-    id("com.google.devtools.ksp") version "1.9.21-1.0.15"
+    alias(libs.plugins.devtools.ksp)
     id("org.jetbrains.dokka")
+    kotlin("multiplatform")
 }
 
 kotlin {
     jvm("jvm")
-    js()
+    js {
+        browser()
+        nodejs()
+    }
 
     sourceSets {
         val commonMain by getting {
@@ -19,6 +23,7 @@ kotlin {
             dependencies {
                 implementation(libs.kotest.framework.engine)
                 implementation(libs.kotest.assertions.core)
+                //implementation(libs.kotest.assertions.kotlinx.time)
                 implementation(libs.kotest.property)
                 implementation(kotlin("test"))
                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.5.0")

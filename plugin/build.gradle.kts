@@ -2,8 +2,8 @@ import dev.nesk.akkurate.gradle.configurePom
 
 plugins {
     id("akkurate.publishing-conventions")
-    kotlin("jvm")
     id("org.jetbrains.dokka")
+    kotlin("jvm")
 }
 
 buildscript {

@@ -28,7 +28,7 @@ import kotlin.time.Duration
 /**
  * All generated temporal values depend on this clock. Its internal visibility allows to change it during testing.
  */
-internal var clock = Clock.System
+internal var clock: Clock = Clock.System
 
 private val currentInstant get() = clock.now()
 
@@ -229,6 +229,7 @@ public fun Validatable<Duration?>.isGreaterThanOrEqualTo(value: Duration): Const
 public fun Validatable<Duration?>.isBetween(range: ClosedRange<Duration>): Constraint =
     constrainIfNotNull { it in range } otherwise { "Must be between ${range.start} and ${range.endInclusive} (inclusive)" }
 
+@OptIn(ExperimentalStdlibApi::class)
 public fun Validatable<Duration?>.isBetween(range: OpenEndRange<Duration>): Constraint =
     constrainIfNotNull { it in range } otherwise { "Must be between ${range.start} and ${range.endExclusive} (exclusive)" }
 //endregion

@@ -17,142 +17,166 @@
 
 package dev.nesk.akkurate
 
-import kotlin.test.*
+import io.kotest.assertions.withClue
+import io.kotest.core.spec.style.FunSpec
+import io.kotest.matchers.booleans.shouldBeFalse
+import io.kotest.matchers.booleans.shouldBeTrue
+import io.kotest.matchers.collections.shouldContainAll
+import io.kotest.matchers.collections.shouldNotBeEmpty
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
+import io.kotest.matchers.string.shouldNotBeBlank
 
-class ConfigurationSpec {
-    @Test
-    fun `the default configuration is viable`() {
-        Configuration().let {
-            assertTrue(it.defaultViolationMessage.isNotBlank(), "The default message is not blank")
-            assertTrue(it.rootPath.isEmpty(), "The default root path is empty")
-            assertFalse(it.failOnFirstViolation, "By default, it doesn't fail on the first constraint")
-        }
-    }
+class ConfigurationSpec : FunSpec() {
+    init {
 
-    @Test
-    fun `all configuration options are customizable`() {
-        val config = Configuration {
-            defaultViolationMessage = "foo"
-            rootPath = listOf("bar", "baz")
-            failOnFirstViolation = true
-        }
-
-        assertEquals("foo", config.defaultViolationMessage, "defaultViolationMessage is customizable")
-        assertEquals(listOf("bar", "baz"), config.rootPath, "rootPath is customizable")
-        assertTrue(config.failOnFirstViolation, "failOnFirstViolation is customizable")
-    }
-
-    @Test
-    fun `a new configuration can be generated based from a previous one`() {
-        // Arrange
-        val sourceConfig = Configuration {
-            defaultViolationMessage = "foo"
-            rootPath = listOf("bar", "baz")
-            failOnFirstViolation = true
+        test("the default configuration is viable") {
+            Configuration().let {
+                withClue("The default message is not blank") {
+                    it.defaultViolationMessage.shouldNotBeBlank()
+                }
+                withClue("The default root path is empty") {
+                    it.rootPath.shouldNotBeEmpty()
+                }
+                withClue("By default, it doesn't fail on the first constraint") {
+                    it.failOnFirstViolation.shouldBeFalse()
+                }
+            }
         }
 
-        // Act
-        val alteredConfig = Configuration(sourceConfig) {
-            defaultViolationMessage += "_"
-            rootPath = rootPath.map { it + "_" }
-            failOnFirstViolation = failOnFirstViolation
+        test("all configuration options are customizable") {
+            val config = Configuration {
+                defaultViolationMessage = "foo"
+                rootPath = listOf("bar", "baz")
+                failOnFirstViolation = true
+            }
+
+            withClue("defaultViolationMessage is customizable") {
+                config.defaultViolationMessage.shouldBe("foo")
+            }
+
+            withClue("rootPath is customizable") {
+                config.rootPath.shouldContainAll("bar", "baz")
+            }
+
+            withClue("failOnFirstViolation is customizable") {
+                config.failOnFirstViolation.shouldBeTrue()
+            }
+
         }
 
-        // Assert
-        assertEquals("foo_", alteredConfig.defaultViolationMessage, "defaultViolationMessage is altered")
-        assertEquals(listOf("bar_", "baz_"), alteredConfig.rootPath, "rootPath is altered")
-        assertTrue(alteredConfig.failOnFirstViolation, "failOnFirstViolation is altered")
-    }
+        test("a new configuration can be generated based from a previous one") {
+            // Arrange
+            val sourceConfig = Configuration {
+                defaultViolationMessage = "foo"
+                rootPath = listOf("bar", "baz")
+                failOnFirstViolation = true
+            }
 
-    @Test
-    fun `source configurations aren't mutated`() {
-        // Arrange
-        val sourceConfig = Configuration {
-            defaultViolationMessage = "foo"
+            // Act
+            val alteredConfig = Configuration(sourceConfig) {
+                defaultViolationMessage += "_"
+                rootPath = rootPath.map { it + "_" }
+                failOnFirstViolation = failOnFirstViolation
+            }
+
+            // Assert
+            withClue("defaultViolationMessage is altered") {
+                alteredConfig.defaultViolationMessage.shouldBe("foo_")
+            }
+            withClue("rootPath is altered") {
+                alteredConfig.rootPath.shouldContainAll("bar_", "baz_")
+            }
+            withClue("failOnFirstViolation is altered") {
+                alteredConfig.failOnFirstViolation.shouldBeTrue()
+            }
         }
 
-        // Act
-        Configuration(sourceConfig) {
-            defaultViolationMessage += "_"
+        test("source configurations aren't mutated") {
+            // Arrange
+            val sourceConfig = Configuration {
+                defaultViolationMessage = "foo"
+            }
+
+            // Act
+            Configuration(sourceConfig) {
+                defaultViolationMessage += "_"
+            }
+
+            // Assert
+             sourceConfig.defaultViolationMessage.shouldBe("foo")
         }
 
-        // Assert
-        assertEquals("foo", sourceConfig.defaultViolationMessage)
-    }
+        test("generated configurations cannot be mutated by keeping a reference to the builder") {
+            // Arrange
+            lateinit var builder: Configuration.Builder
+            val config = Configuration {
+                builder = this
+                defaultViolationMessage = "foo"
+            }
 
-    @Test
-    fun `generated configurations cannot be mutated by keeping a reference to the builder`() {
-        // Arrange
-        lateinit var builder: Configuration.Builder
-        val config = Configuration {
-            builder = this
-            defaultViolationMessage = "foo"
+            // Act
+            builder.defaultViolationMessage = "bar"
+
+            // Assert
+            config.defaultViolationMessage.shouldBe("foo")
         }
 
-        // Act
-        builder.defaultViolationMessage = "bar"
+        test("'rootPath' function defines the property of the same name") {
+            val config = Configuration { rootPath("foo", "bar") }
+            config.rootPath.shouldContainAll("foo", "bar")
+        }
 
-        // Assert
-        assertEquals("foo", config.defaultViolationMessage)
-    }
+        //region equals/hashCode/toString
+        test("'equals' returns true when all the values are the same") {
+            Configuration().shouldBe(Configuration())
+        }
 
-    @Test
-    fun `'rootPath' function defines the property of the same name`() {
-        val config = Configuration { rootPath("foo", "bar") }
-        assertEquals(listOf("foo", "bar"), config.rootPath)
-    }
+        test("'equals' returns false when at least one of the values differ (variant 'defaultViolationMessage')") {
+            val original = Configuration()
+            val other = Configuration { defaultViolationMessage = "foo" }
+            original.shouldNotBe(other)
+        }
 
-    //region equals/hashCode/toString
-    @Test
-    fun `'equals' returns true when all the values are the same`() {
-        assertTrue(Configuration().equals(Configuration()))
-    }
 
-    @Test
-    fun `'equals' returns false when at least one of the values differ (variant 'defaultViolationMessage')`() {
-        val original = Configuration()
-        val other = Configuration { defaultViolationMessage = "foo" }
-        assertFalse(original.equals(other))
-    }
+        test("'equals' returns false when at least one of the values differ (variant 'rootPath')") {
+            val original = Configuration()
+            val other = Configuration { rootPath("foo") }
+            original.shouldNotBe(other)
+        }
 
-    @Test
-    fun `'equals' returns false when at least one of the values differ (variant 'rootPath')`() {
-        val original = Configuration()
-        val other = Configuration { rootPath("foo") }
-        assertFalse(original.equals(other))
-    }
 
-    @Test
-    fun `'equals' returns false when at least one of the values differ (variant 'failOnFirstViolation')`() {
-        val original = Configuration()
-        val other = Configuration { failOnFirstViolation = true }
-        assertFalse(original.equals(other))
-    }
+        test("'equals' returns false when at least one of the values differ (variant 'failOnFirstViolation')") {
+            val original = Configuration()
+            val other = Configuration { failOnFirstViolation = true }
+            original.shouldNotBe(other)
+        }
 
-    @Test
-    fun `'hashCode' returns the same hash when all the values are the same`() {
-        assertEquals(Configuration().hashCode(), Configuration().hashCode())
-    }
 
-    @Test
-    fun `'hashCode' returns different hashes when at least one of the values differ (variant 'defaultViolationMessage')`() {
-        val original = Configuration()
-        val other = Configuration { defaultViolationMessage = "foo" }
-        assertNotEquals(original.hashCode(), other.hashCode())
-    }
+        test("'hashCode' returns the same hash when all the values are the same") {
+            Configuration().hashCode().shouldBe(Configuration().hashCode())
+        }
 
-    @Test
-    fun `'hashCode' returns different hashes when at least one of the values differ (variant 'rootPath')`() {
-        val original = Configuration()
-        val other = Configuration { rootPath("foo") }
-        assertNotEquals(original.hashCode(), other.hashCode())
-    }
 
-    @Test
-    fun `'hashCode' returns different hashes when at least one of the values differ (variant 'failOnFirstViolation')`() {
-        val original = Configuration()
-        val other = Configuration { failOnFirstViolation = true }
-        assertNotEquals(original.hashCode(), other.hashCode())
+        test("'hashCode' returns different hashes when at least one of the values differ (variant 'defaultViolationMessage')") {
+            val original = Configuration()
+            val other = Configuration { defaultViolationMessage = "foo" }
+            original.hashCode().shouldNotBe(other.hashCode())
+        }
+
+
+        test("'hashCode' returns different hashes when at least one of the values differ (variant 'rootPath')") {
+            val original = Configuration()
+            val other = Configuration { rootPath("foo") }
+            original.hashCode().shouldNotBe(other.hashCode())
+        }
+
+
+        test("'hashCode' returns different hashes when at least one of the values differ (variant 'failOnFirstViolation')") {
+            val original = Configuration()
+            val other = Configuration { failOnFirstViolation = true }
+            original.hashCode().shouldNotBe(other.hashCode())
+        }
     }
     //endregion
 }
