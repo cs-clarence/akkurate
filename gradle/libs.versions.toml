@@ -1,0 +1,10 @@
+[versions]
+kotest = "5.8.0"
+
+[libraries]
+kotest-framework-engine = { group = "io.kotest", name = "kotest-framework-engine", version.ref = "kotest" }
+kotest-assertions-core = { group = "io.kotest", name = "kotest-assertions-core", version.ref = "kotest" }
+kotest-property = { group = "io.kotest", name = "kotest-property", version.ref = "kotest" }
+
+[plugins]
+kotest-multiplatform-plugin = { id = "io.kotest.multiplatform", version.ref = "kotest" }
