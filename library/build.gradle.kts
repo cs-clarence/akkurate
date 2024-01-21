@@ -1,13 +1,13 @@
 plugins {
     id("akkurate.kmp-library-conventions")
     alias(libs.plugins.devtools.ksp)
-    id("org.jetbrains.dokka")
+    alias(libs.plugins.dokka)
     kotlin("multiplatform")
 }
 
 kotlin {
     jvm("jvm")
-    js {
+    js(IR) {
         browser()
         nodejs()
     }
